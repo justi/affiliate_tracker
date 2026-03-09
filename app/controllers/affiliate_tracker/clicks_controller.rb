@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "uri"
+require 'uri'
 
 module AffiliateTracker
   class ClicksController < ApplicationController
@@ -24,8 +24,9 @@ module AffiliateTracker
         # Redirect to destination
         redirect_to final_url, allow_other_host: true, status: :moved_permanently
       rescue AffiliateTracker::Error => e
-        Rails.logger.warn "[AffiliateTracker] Invalid tracking URL: #{e.message}"
-        render plain: "Invalid link", status: :bad_request
+        Rails.logger.warn "[AffiliateTracker] Invalid tracking URL: #{e.message} from #{request.remote_ip}"
+        fallback_url = extract_fallback_url(payload)
+        redirect_to fallback_url, allow_other_host: true
       end
     end
 
@@ -36,6 +37,7 @@ module AffiliateTracker
 
       # Deduplication using Rails.cache (5 seconds window)
       return if Rails.cache.exist?(dedup_key)
+
       Rails.cache.write(dedup_key, true, expires_in: 5.seconds)
 
       click = Click.create!(
@@ -57,16 +59,16 @@ module AffiliateTracker
 
     def append_utm_params(url, metadata)
       uri = URI.parse(url)
-      params = URI.decode_www_form(uri.query || "")
+      params = URI.decode_www_form(uri.query || '')
 
       # Add ref and UTM params (metadata overrides defaults)
       config = AffiliateTracker.configuration
       tracking_params = {
-        "ref" => config.ref_param,
-        "utm_source" => metadata["utm_source"] || config.utm_source,
-        "utm_medium" => metadata["utm_medium"] || config.utm_medium,
-        "utm_campaign" => metadata["campaign"],
-        "utm_content" => metadata["shop"]
+        'ref' => config.ref_param,
+        'utm_source' => metadata['utm_source'] || config.utm_source,
+        'utm_medium' => metadata['utm_medium'] || config.utm_medium,
+        'utm_campaign' => metadata['campaign'],
+        'utm_content' => metadata['shop']
       }.compact
 
       # Merge with existing params (don't overwrite if already present)
@@ -81,12 +83,28 @@ module AffiliateTracker
       url
     end
 
+    # Try to extract a useful fallback URL from the (unverified) payload.
+    # Falls back to base_url (homepage) if payload is undecodable.
+    def extract_fallback_url(payload)
+      base = AffiliateTracker.configuration.base_url || '/'
+
+      return base if payload.blank?
+
+      data = JSON.parse(Base64.urlsafe_decode64(payload))
+      slug = data['shop']
+      slug.present? ? "#{base}/#{slug}" : base
+    rescue StandardError
+      base
+    end
+
     def anonymize_ip(ip)
       return nil if ip.blank?
-      parts = ip.split(".")
+
+      parts = ip.split('.')
       return ip unless parts.size == 4
-      parts[3] = "0"
-      parts.join(".")
+
+      parts[3] = '0'
+      parts.join('.')
     end
   end
 end
