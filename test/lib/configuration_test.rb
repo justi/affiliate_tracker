@@ -100,4 +100,56 @@ class AffiliateTrackerConfigureTest < Minitest::Test
     url = AffiliateTracker.track_url('https://shop.com', { shop_id: 1 })
     assert url.start_with?('https://test.example.com/a/')
   end
+
+  def test_track_url_merges_default_metadata
+    AffiliateTracker.configure do |config|
+      config.default_metadata = -> { { user_id: 42, campaign: "default" } }
+    end
+
+    url = AffiliateTracker.track_url("https://shop.com", shop_id: 1)
+    payload, signature = extract_tracking_parts(url)
+    result = AffiliateTracker::UrlGenerator.decode(payload, signature)
+
+    assert_equal 42, result[:metadata]["user_id"]
+    assert_equal "default", result[:metadata]["campaign"]
+    assert_equal 1, result[:metadata]["shop_id"]
+  end
+
+  def test_explicit_metadata_overrides_default_metadata
+    AffiliateTracker.configure do |config|
+      config.default_metadata = -> { { campaign: "default", user_id: 42 } }
+    end
+
+    url = AffiliateTracker.track_url("https://shop.com", { campaign: "custom" })
+    payload, signature = extract_tracking_parts(url)
+    result = AffiliateTracker::UrlGenerator.decode(payload, signature)
+
+    assert_equal "custom", result[:metadata]["campaign"]
+    assert_equal 42, result[:metadata]["user_id"]
+  end
+
+  def test_non_hash_default_metadata_is_ignored
+    AffiliateTracker.configure do |config|
+      config.default_metadata = -> { "not-a-hash" }
+    end
+
+    url = AffiliateTracker.track_url("https://shop.com")
+    payload, signature = extract_tracking_parts(url)
+    result = AffiliateTracker::UrlGenerator.decode(payload, signature)
+
+    assert_empty result[:metadata]
+  end
+
+  def test_default_metadata_error_does_not_break_url_generation
+    AffiliateTracker.configure do |config|
+      config.default_metadata = -> { raise "boom" }
+    end
+
+    url = AffiliateTracker.track_url("https://shop.com")
+    payload, signature = extract_tracking_parts(url)
+    result = AffiliateTracker::UrlGenerator.decode(payload, signature)
+
+    assert_equal "https://shop.com", result[:destination_url]
+    assert_empty result[:metadata]
+  end
 end

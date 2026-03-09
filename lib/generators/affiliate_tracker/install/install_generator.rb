@@ -24,7 +24,12 @@ module AffiliateTracker
       end
 
       def mount_engine
-        route 'mount AffiliateTracker::Engine, at: "/a"'
+        routes_path = "config/routes.rb"
+        mount_line = 'mount AffiliateTracker::Engine, at: "/a"'
+
+        return if File.exist?(routes_path) && File.read(routes_path).include?(mount_line)
+
+        route mount_line
       end
 
       def show_readme
