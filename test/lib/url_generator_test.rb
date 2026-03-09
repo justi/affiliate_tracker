@@ -1,21 +1,21 @@
 # frozen_string_literal: true
 
-require "test_helper"
+require 'test_helper'
 
 class UrlGeneratorTest < Minitest::Test
   def setup
-    @destination = "https://shop.example.com/product/123"
-    @metadata = { shop_id: 1, promotion_id: 42, campaign: "email" }
+    @destination = 'https://shop.example.com/product/123'
+    @metadata = { shop_id: 1, promotion_id: 42, campaign: 'email' }
   end
 
   def test_generates_url_with_base_url
     url = AffiliateTracker::UrlGenerator.new(@destination).generate
-    assert url.start_with?("https://test.example.com/a/")
+    assert url.start_with?('https://test.example.com/a/')
   end
 
   def test_generates_url_with_signature
     url = AffiliateTracker::UrlGenerator.new(@destination).generate
-    assert_match(/\?s=[a-f0-9]{16}$/, url)
+    assert_match(/\?s=[a-f0-9]{32}$/, url)
   end
 
   def test_generates_url_with_payload
@@ -30,10 +30,10 @@ class UrlGeneratorTest < Minitest::Test
     payload = url.match(%r{/a/([^?]+)\?})[1]
     decoded = JSON.parse(Base64.urlsafe_decode64(payload))
 
-    assert_equal @destination, decoded["u"]
-    assert_equal 1, decoded["shop_id"]
-    assert_equal 42, decoded["promotion_id"]
-    assert_equal "email", decoded["campaign"]
+    assert_equal @destination, decoded['u']
+    assert_equal 1, decoded['shop_id']
+    assert_equal 42, decoded['promotion_id']
+    assert_equal 'email', decoded['campaign']
   end
 
   def test_decode_returns_destination_url
@@ -51,8 +51,8 @@ class UrlGeneratorTest < Minitest::Test
     signature = url.match(/\?s=([a-f0-9]+)$/)[1]
 
     result = AffiliateTracker::UrlGenerator.decode(payload, signature)
-    assert_equal 1, result[:metadata]["shop_id"]
-    assert_equal 42, result[:metadata]["promotion_id"]
+    assert_equal 1, result[:metadata]['shop_id']
+    assert_equal 42, result[:metadata]['promotion_id']
   end
 
   def test_decode_raises_on_invalid_signature
@@ -60,14 +60,14 @@ class UrlGeneratorTest < Minitest::Test
     payload = url.match(%r{/a/([^?]+)\?})[1]
 
     assert_raises(AffiliateTracker::Error) do
-      AffiliateTracker::UrlGenerator.decode(payload, "invalidsignature")
+      AffiliateTracker::UrlGenerator.decode(payload, 'invalidsignature')
     end
   end
 
   def test_decode_raises_on_tampered_payload
     url = AffiliateTracker::UrlGenerator.new(@destination).generate
     signature = url.match(/\?s=([a-f0-9]+)$/)[1]
-    tampered_payload = Base64.urlsafe_encode64({ u: "https://evil.com" }.to_json, padding: false)
+    tampered_payload = Base64.urlsafe_encode64({ u: 'https://evil.com' }.to_json, padding: false)
 
     assert_raises(AffiliateTracker::Error) do
       AffiliateTracker::UrlGenerator.decode(tampered_payload, signature)
@@ -75,13 +75,13 @@ class UrlGeneratorTest < Minitest::Test
   end
 
   def test_different_destinations_produce_different_signatures
-    url1 = AffiliateTracker::UrlGenerator.new("https://shop1.com").generate
-    url2 = AffiliateTracker::UrlGenerator.new("https://shop2.com").generate
+    url1 = AffiliateTracker::UrlGenerator.new('https://shop1.com').generate
+    url2 = AffiliateTracker::UrlGenerator.new('https://shop2.com').generate
 
     sig1 = url1.match(/\?s=([a-f0-9]+)$/)[1]
     sig2 = url2.match(/\?s=([a-f0-9]+)$/)[1]
 
-    refute_equal sig1, sig2
+    assert sig1 != sig2, 'Expected different signatures for different URLs'
   end
 
   def test_same_input_produces_same_url
@@ -92,7 +92,7 @@ class UrlGeneratorTest < Minitest::Test
   end
 
   def test_handles_special_characters_in_url
-    special_url = "https://shop.com/search?q=test&category=shoes"
+    special_url = 'https://shop.com/search?q=test&category=shoes'
     url = AffiliateTracker::UrlGenerator.new(special_url).generate
     payload = url.match(%r{/a/([^?]+)\?})[1]
     signature = url.match(/\?s=([a-f0-9]+)$/)[1]
@@ -102,12 +102,12 @@ class UrlGeneratorTest < Minitest::Test
   end
 
   def test_handles_unicode_in_metadata
-    unicode_metadata = { campaign: "lato_2024_żółć" }
+    unicode_metadata = { campaign: 'lato_2024_żółć' }
     url = AffiliateTracker::UrlGenerator.new(@destination, unicode_metadata).generate
     payload = url.match(%r{/a/([^?]+)\?})[1]
     signature = url.match(/\?s=([a-f0-9]+)$/)[1]
 
     result = AffiliateTracker::UrlGenerator.decode(payload, signature)
-    assert_equal "lato_2024_żółć", result[:metadata]["campaign"]
+    assert_equal 'lato_2024_żółć', result[:metadata]['campaign']
   end
 end

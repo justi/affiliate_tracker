@@ -3,6 +3,7 @@
 require 'base64'
 require 'openssl'
 require 'json'
+require 'active_support/security_utils'
 
 module AffiliateTracker
   class UrlGenerator
@@ -27,7 +28,7 @@ module AffiliateTracker
     end
 
     def sign(payload)
-      OpenSSL::HMAC.hexdigest('SHA256', secret_key, payload).first(16)
+      OpenSSL::HMAC.hexdigest('SHA256', secret_key, payload).first(32)
     end
 
     def base_url
@@ -51,24 +52,15 @@ module AffiliateTracker
           'SHA256',
           AffiliateTracker.configuration.secret_key,
           payload
-        ).first(16)
+        ).first(32)
 
-        raise Error, 'Invalid signature' unless secure_compare(expected_sig, signature)
+        raise Error, 'Invalid signature' unless ActiveSupport::SecurityUtils.secure_compare(expected_sig, signature)
 
         data = JSON.parse(Base64.urlsafe_decode64(payload))
         {
           destination_url: data.delete('u'),
           metadata: data
         }
-      end
-
-      private
-
-      def secure_compare(a, b)
-        return false if a.nil? || b.nil?
-        return false unless a.bytesize == b.bytesize
-
-        a.bytes.zip(b.bytes).reduce(0) { |sum, (x, y)| sum | (x ^ y) }.zero?
       end
     end
   end
