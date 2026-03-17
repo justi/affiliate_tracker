@@ -10,7 +10,7 @@ module AffiliateTracker
     attr_reader :destination_url, :metadata
 
     def initialize(destination_url, metadata = {})
-      @destination_url = destination_url
+      @destination_url = normalize_url(destination_url)
       @metadata = metadata.transform_keys(&:to_s)
     end
 
@@ -21,6 +21,11 @@ module AffiliateTracker
     end
 
     private
+
+    def normalize_url(url)
+      return url if url.blank? || url.match?(%r{\A[a-zA-Z][a-zA-Z0-9+\-.]*://})
+      "https://#{url}"
+    end
 
     def encode_payload
       data = { u: destination_url }.merge(metadata)

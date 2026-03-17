@@ -18,6 +18,9 @@ module AffiliateTracker
         # Record the click
         record_click(destination_url, metadata)
 
+        # Normalize URL protocol
+        destination_url = "https://#{destination_url}" unless destination_url.match?(%r{\A[a-zA-Z][a-zA-Z0-9+\-.]*://})
+
         # Build final URL with UTM parameters
         final_url = append_utm_params(destination_url, metadata)
 
