@@ -16,14 +16,16 @@ Gem::Specification.new do |spec|
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
+  spec.metadata["changelog_uri"] = "https://github.com/justi-blue/affiliate_tracker/blob/main/CHANGELOG.md"
+  spec.metadata["rubygems_mfa_required"] = "true"
 
   spec.files = Dir.chdir(__dir__) do
-    Dir["{app,config,lib}/**/*", "Rakefile", "README.md"]
+    Dir["{app,config,lib}/**/*", "Rakefile", "README.md", "LICENSE.txt", "CHANGELOG.md"]
   end
 
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "rails", ">= 8.0"
+  spec.add_dependency "rails", ">= 8.0", "< 10"
 
   spec.add_development_dependency "minitest", "~> 5.0"
   spec.add_development_dependency "rake", "~> 13.0"

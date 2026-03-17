@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1] - 2026-03-17
+
+### Changed
+- Redirect status changed from 301 (`:moved_permanently`) to 302 (`:found`). 301s are cached permanently by browsers, which prevents click re-tracking on subsequent visits.
+- IPv6 anonymization: `anonymize_ip` now handles IPv6 addresses by zeroing the last 80 bits (last 5 groups), in addition to the existing IPv4 last-octet zeroing.
+- CI matrix expanded to test Ruby 3.2, 3.3, and 3.4.
+- Gem prepared for RubyGems.org publication: added LICENSE.txt, CHANGELOG.md to gem files, MFA requirement, upper-bound Rails dependency (`< 10`).
+
 ## [0.3.0] - 2026-03-17
 
 ### Added

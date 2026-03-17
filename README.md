@@ -43,6 +43,12 @@ Your email → User clicks → AffiliateTracker counts → Redirect with UTM →
 ## Installation
 
 ```ruby
+gem "affiliate_tracker"
+```
+
+Or, for the latest development version:
+
+```ruby
 gem "affiliate_tracker", git: "https://github.com/justi-blue/affiliate_tracker"
 ```
 

@@ -24,8 +24,8 @@ module AffiliateTracker
         # Build final URL with UTM parameters
         final_url = append_utm_params(destination_url, metadata)
 
-        # Redirect to destination
-        redirect_to final_url, allow_other_host: true, status: :moved_permanently
+        # Redirect to destination (302 so browsers don't cache and we can re-track clicks)
+        redirect_to final_url, allow_other_host: true, status: :found
       rescue AffiliateTracker::Error => e
         Rails.logger.warn "[AffiliateTracker] Invalid tracking URL: #{e.message} from #{request.remote_ip}"
         redirect_to AffiliateTracker.configuration.resolve_fallback_url(payload), allow_other_host: true
@@ -88,11 +88,23 @@ module AffiliateTracker
     def anonymize_ip(ip)
       return nil if ip.blank?
 
-      parts = ip.split('.')
-      return ip unless parts.size == 4
+      if ip.include?(':')
+        # IPv6: zero the last 80 bits (last 5 groups)
+        groups = ip.split(':')
+        if groups.size >= 8
+          (3..7).each { |i| groups[i] = '0' }
+          groups.join(':')
+        else
+          ip
+        end
+      else
+        # IPv4: zero the last octet
+        parts = ip.split('.')
+        return ip unless parts.size == 4
 
-      parts[3] = '0'
-      parts.join('.')
+        parts[3] = '0'
+        parts.join('.')
+      end
     end
   end
 end

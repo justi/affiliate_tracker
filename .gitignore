@@ -8,3 +8,4 @@
 /log/*.log
 /test/tmp/
 /tmp/
+/Gemfile.lock

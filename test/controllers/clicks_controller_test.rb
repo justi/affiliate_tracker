@@ -273,7 +273,7 @@ class ClicksControllerTest < ActionController::TestCase
       get :redirect, params: { payload: payload, s: signature }
     end
 
-    assert_response :moved_permanently
+    assert_response :found
     assert_match %r{\Ahttps://shop\.com/sale}, response.redirect_url
   end
 
