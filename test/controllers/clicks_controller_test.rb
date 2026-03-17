@@ -260,6 +260,23 @@ class ClicksControllerTest < ActionController::TestCase
     assert_equal 500, click.referer.length
   end
 
+  def test_redirect_normalizes_url_without_protocol
+    # Manually build payload with a protocol-less URL (simulates old data)
+    payload = Base64.urlsafe_encode64({ u: "shop.com/sale", campaign: "test" }.to_json, padding: false)
+    signature = OpenSSL::HMAC.hexdigest(
+      "SHA256",
+      AffiliateTracker.configuration.secret_key,
+      payload
+    ).first(32)
+
+    with_request_metadata(remote_addr: "203.0.113.42") do
+      get :redirect, params: { payload: payload, s: signature }
+    end
+
+    assert_response :moved_permanently
+    assert_match %r{\Ahttps://shop\.com/sale}, response.redirect_url
+  end
+
   private
 
   def with_request_metadata(remote_addr:, user_agent: nil, referer: nil)

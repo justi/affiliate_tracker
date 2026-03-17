@@ -110,4 +110,31 @@ class UrlGeneratorTest < Minitest::Test
     result = AffiliateTracker::UrlGenerator.decode(payload, signature)
     assert_equal 'lato_2024_żółć', result[:metadata]['campaign']
   end
+
+  def test_normalizes_url_without_protocol
+    url = AffiliateTracker::UrlGenerator.new('shop.example.com/sale').generate
+    payload = url.match(%r{/a/([^?]+)\?})[1]
+    signature = url.match(/\?s=([a-f0-9]+)$/)[1]
+
+    result = AffiliateTracker::UrlGenerator.decode(payload, signature)
+    assert_equal 'https://shop.example.com/sale', result[:destination_url]
+  end
+
+  def test_preserves_http_url
+    url = AffiliateTracker::UrlGenerator.new('http://shop.example.com').generate
+    payload = url.match(%r{/a/([^?]+)\?})[1]
+    signature = url.match(/\?s=([a-f0-9]+)$/)[1]
+
+    result = AffiliateTracker::UrlGenerator.decode(payload, signature)
+    assert_equal 'http://shop.example.com', result[:destination_url]
+  end
+
+  def test_preserves_https_url
+    url = AffiliateTracker::UrlGenerator.new('https://shop.example.com').generate
+    payload = url.match(%r{/a/([^?]+)\?})[1]
+    signature = url.match(/\?s=([a-f0-9]+)$/)[1]
+
+    result = AffiliateTracker::UrlGenerator.decode(payload, signature)
+    assert_equal 'https://shop.example.com', result[:destination_url]
+  end
 end
