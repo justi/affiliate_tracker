@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.2] - 2026-03-17
+
+### Changed
+- Added "Used in production" section to README (snipe.sale).
+- Updated feature list in README (URL normalization, IPv6 anonymization).
+
 ## [0.3.1] - 2026-03-17
 
 ### Changed

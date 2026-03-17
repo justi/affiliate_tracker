@@ -32,11 +32,17 @@ Your email → User clicks → AffiliateTracker counts → Redirect with UTM →
                     Shop sees: utm_source=yourname
 ```
 
+## Used in production
+
+This gem powers affiliate link tracking on [Snipe Sale](https://snipe.sale) — a promotion aggregator for online shops. All outbound merchant links (web pages and email digests) go through AffiliateTracker to count clicks and append UTM parameters.
+
 ## Features
 
 - Click tracking with metadata (shop, campaign, etc.)
 - Automatic UTM parameter injection
+- URL normalization (protocol-less URLs get `https://` prepended)
 - Click deduplication (same IP + URL within 5s counted once)
+- IPv4 and IPv6 IP anonymization (GDPR-friendly)
 - Built-in dashboard
 - Rails 8+ / zero configuration
 
@@ -49,7 +55,7 @@ gem "affiliate_tracker"
 Or, for the latest development version:
 
 ```ruby
-gem "affiliate_tracker", git: "https://github.com/justi-blue/affiliate_tracker"
+gem "affiliate_tracker", git: "https://github.com/justi/affiliate_tracker"
 ```
 
 ```bash

@@ -10,13 +10,13 @@ Gem::Specification.new do |spec|
 
   spec.summary = "Simple affiliate link tracking for Rails"
   spec.description = "A Rails engine for tracking affiliate link clicks with redirect support and monitoring dashboard."
-  spec.homepage = "https://github.com/justi-blue/affiliate_tracker"
+  spec.homepage = "https://github.com/justi/affiliate_tracker"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.2.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
-  spec.metadata["changelog_uri"] = "https://github.com/justi-blue/affiliate_tracker/blob/main/CHANGELOG.md"
+  spec.metadata["changelog_uri"] = "https://github.com/justi/affiliate_tracker/blob/main/CHANGELOG.md"
   spec.metadata["rubygems_mfa_required"] = "true"
 
   gemspec = File.basename(__FILE__)
