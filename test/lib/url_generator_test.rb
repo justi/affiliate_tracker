@@ -137,4 +137,64 @@ class UrlGeneratorTest < Minitest::Test
     result = AffiliateTracker::UrlGenerator.decode(payload, signature)
     assert_equal 'https://shop.example.com', result[:destination_url]
   end
+
+  def test_preserves_ftp_protocol
+    gen = AffiliateTracker::UrlGenerator.new('ftp://files.example.com/data')
+    url = gen.generate
+    payload = url.match(%r{/a/([^?]+)\?})[1]
+    signature = url.match(/\?s=([a-f0-9]+)$/)[1]
+
+    result = AffiliateTracker::UrlGenerator.decode(payload, signature)
+    assert_equal 'ftp://files.example.com/data', result[:destination_url]
+  end
+
+  def test_normalizes_url_with_port
+    gen = AffiliateTracker::UrlGenerator.new('shop.example.com:8080/product')
+    url = gen.generate
+    payload = url.match(%r{/a/([^?]+)\?})[1]
+    signature = url.match(/\?s=([a-f0-9]+)$/)[1]
+
+    result = AffiliateTracker::UrlGenerator.decode(payload, signature)
+    assert_equal 'https://shop.example.com:8080/product', result[:destination_url]
+  end
+
+  def test_normalize_blank_url_returns_blank
+    gen = AffiliateTracker::UrlGenerator.new('')
+    assert_equal '', gen.destination_url
+  end
+
+  def test_normalize_nil_url_returns_nil
+    gen = AffiliateTracker::UrlGenerator.new(nil)
+    assert_nil gen.destination_url
+  end
+
+  def test_decode_raises_on_nil_payload
+    assert_raises(AffiliateTracker::Error) do
+      AffiliateTracker::UrlGenerator.decode(nil, 'somesig')
+    end
+  end
+
+  def test_decode_raises_on_empty_payload
+    assert_raises(AffiliateTracker::Error) do
+      AffiliateTracker::UrlGenerator.decode('', 'somesig')
+    end
+  end
+
+  def test_decode_raises_on_nil_signature
+    url = AffiliateTracker::UrlGenerator.new(@destination).generate
+    payload = url.match(%r{/a/([^?]+)\?})[1]
+
+    assert_raises(AffiliateTracker::Error) do
+      AffiliateTracker::UrlGenerator.decode(payload, nil)
+    end
+  end
+
+  def test_decode_raises_on_empty_signature
+    url = AffiliateTracker::UrlGenerator.new(@destination).generate
+    payload = url.match(%r{/a/([^?]+)\?})[1]
+
+    assert_raises(AffiliateTracker::Error) do
+      AffiliateTracker::UrlGenerator.decode(payload, '')
+    end
+  end
 end

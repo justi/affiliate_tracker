@@ -30,6 +30,7 @@ class ClicksControllerTest < ActionController::TestCase
       get :redirect, params: { payload: payload, s: signature }
     end
 
+    assert_response :found
     assert_redirected_to(
       "https://shop.com/product?color=red&utm_source=affiliate&utm_medium=referral&utm_campaign=summer_sale&utm_content=modago"
     )
@@ -261,7 +262,6 @@ class ClicksControllerTest < ActionController::TestCase
   end
 
   def test_redirect_normalizes_url_without_protocol
-    # Manually build payload with a protocol-less URL (simulates old data)
     payload = Base64.urlsafe_encode64({ u: "shop.com/sale", campaign: "test" }.to_json, padding: false)
     signature = OpenSSL::HMAC.hexdigest(
       "SHA256",
@@ -275,6 +275,59 @@ class ClicksControllerTest < ActionController::TestCase
 
     assert_response :found
     assert_match %r{\Ahttps://shop\.com/sale}, response.redirect_url
+  end
+
+  def test_redirect_anonymizes_ipv6_address
+    payload, signature = extract_tracking_parts(AffiliateTracker.url("https://shop.com/product"))
+
+    with_request_metadata(remote_addr: "2001:0db8:85a3:0000:0000:8a2e:0370:7334") do
+      get :redirect, params: { payload: payload, s: signature }
+    end
+
+    assert_response :found
+    click = AffiliateTracker::Click.last
+    assert_equal "2001:0db8:85a3:0:0:0:0:0", click.ip_address
+  end
+
+  def test_redirect_passes_through_compressed_ipv6
+    payload, signature = extract_tracking_parts(AffiliateTracker.url("https://shop.com/product"))
+
+    with_request_metadata(remote_addr: "::1") do
+      get :redirect, params: { payload: payload, s: signature }
+    end
+
+    assert_response :found
+    click = AffiliateTracker::Click.last
+    # Compressed IPv6 (fewer than 8 groups) passes through as-is
+    assert_equal "::1", click.ip_address
+  end
+
+  def test_redirect_handles_nil_ip
+    payload, signature = extract_tracking_parts(AffiliateTracker.url("https://shop.com/product"))
+
+    with_request_metadata(remote_addr: nil) do
+      get :redirect, params: { payload: payload, s: signature }
+    end
+
+    assert_response :found
+    click = AffiliateTracker::Click.last
+    assert_nil click.ip_address
+  end
+
+  def test_redirect_still_works_when_click_recording_fails
+    payload, signature = extract_tracking_parts(AffiliateTracker.url("https://shop.com/product", campaign: "test"))
+
+    # Temporarily rename the table so create! raises
+    ActiveRecord::Base.connection.rename_table(:affiliate_tracker_clicks, :affiliate_tracker_clicks_bak)
+
+    with_request_metadata(remote_addr: "203.0.113.42") do
+      get :redirect, params: { payload: payload, s: signature }
+    end
+
+    assert_response :found
+    assert_match %r{\Ahttps://shop\.com/product}, response.redirect_url
+  ensure
+    ActiveRecord::Base.connection.rename_table(:affiliate_tracker_clicks_bak, :affiliate_tracker_clicks)
   end
 
   private
